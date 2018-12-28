@@ -1,0 +1,1 @@
+uri: 422152100797.dkr.ecr.us-west-1.amazonaws.com/dckr-in-aws/todobackend
