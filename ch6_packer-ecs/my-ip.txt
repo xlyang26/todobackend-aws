@@ -1,0 +1,96 @@
+--MyIP: 71.218.164.157
+
+Note: For each instance start, the IP will be different.
+Public DNS (IPv4): ec2-13-56-151-132.us-west-1.compute.amazonaws.com
+IPv4 Public IP:        13.56.151.132
+
+See p.286 and p. 181 on ssh.
+
+both commands below work:
+ssh -i ~/.ssh/ly-dckr-on-aws-admin3.pem ec2-user@13.56.151.132
+ssh -i ~/.ssh/ly-dckr-on-aws-admin3.pem ec2-user@ec2-13-56-151-132.us-west-1.compute.amazonaws.com
+
+e.g.:
+$ ssh -i ~/.ssh/ly-dckr-on-aws-admin3.pem ec2-user@13.56.151.132
+The authenticity of host '13.56.151.132 (13.56.151.132)' can't be established.
+ECDSA key fingerprint is SHA256:rTvSCvjwMovm4XbUPkDtROSWS6rOotfxF2T1xx/QTkw.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added '13.56.151.132' (ECDSA) to the list of known hosts.
+
+   __|  __|  __|
+   _|  (   \__ \   Amazon ECS-Optimized Amazon Linux AMI 2018.03.i
+ ____|\___|____/
+
+For documentation, visit http://aws.amazon.com/documentation/ecs
+[ec2-user@ip-172-31-20-240 ~]$ pwd
+/home/ec2-user
+[ec2-user@ip-172-31-20-240 ~]$ sudo mount
+proc on /proc type proc (rw,relatime)
+sysfs on /sys type sysfs (rw,relatime)
+devtmpfs on /dev type devtmpfs (rw,relatime,size=494904k,nr_inodes=123726,mode=755)
+devpts on /dev/pts type devpts (rw,relatime,gid=5,mode=620,ptmxmode=000)
+tmpfs on /dev/shm type tmpfs (rw,relatime)
+/dev/xvda1 on / type ext4 (rw,noatime,data=ordered)
+devpts on /dev/pts type devpts (rw,relatime,gid=5,mode=620,ptmxmode=000)
+/dev/xvdcy on /data type ext4 (rw,noatime,data=ordered)
+none on /proc/sys/fs/binfmt_misc type binfmt_misc (rw,relatime)
+
+[ec2-user@ip-172-31-20-240 ~]$ sudo service ntpd status
+ntpd (pid  2575) is running...
+[ec2-user@ip-172-31-20-240 ~]$  cat /etc/cloud/cloud.cfg
+# WARNING: Modifications to this file may be overridden by files in
+# /etc/cloud/cloud.cfg.d
+
+# If this is set, 'root' will not be able to ssh in and they
+# will get a message to login instead as the default user (ec2-user)
+disable_root: true
+
+# This will cause the set+update hostname module to not operate (if true)
+preserve_hostname: true
+
+datasource_list: [ Ec2, None ]
+
+repo_upgrade: none
+repo_upgrade_exclude:
+ - kernel
+ - nvidia*
+ - cudatoolkit
+
+mounts:
+ - [ ephemeral0, /media/ephemeral0 ]
+ - [ swap, none, swap, sw, "0", "0" ]
+# vim:syntax=yaml
+repo_update: false
+[ec2-user@ip-172-31-20-240 ~]$ sudo service docker status
+docker is stopped
+[ec2-user@ip-172-31-20-240 ~]$ sudo chkconfig --list docker
+docker         	0:off	1:off	2:off	3:off	4:off	5:off	6:off
+[ec2-user@ip-172-31-20-240 ~]$ ls
+firstrun.sh
+
+====  Timezone problem, in packer.json, instead of "US/Eastern", timezone is set to "US/Western", which is invalid.   ====
+[ec2-user@ip-172-31-20-240 ~]$ date
+Mon Dec 31 05:34:02 UTC 2018     <===  Notice UTC timezone, not US/Western, see below for US timezones in zoneinfo/US
+[ec2-user@ip-172-31-20-240 ~]$ cd /usr/share/zoneinfo/
+[ec2-user@ip-172-31-20-240 zoneinfo]$ cd US
+[ec2-user@ip-172-31-20-240 US]$ ls
+Alaska  Aleutian  Arizona  Central  Eastern  East-Indiana  Hawaii  Indiana-Starke  Michigan  Mountain  Pacific  Pacific-New  Samoa
+[ec2-user@ip-172-31-20-240 US]$
+
+The command in scripts/time.sh, sudo ln -sf /usr/share/zoneinfo/"$TIMEZONE" /etc/localtime, makes an invalid link.
+
+After manually set: 
+[ec2-user@ip-172-31-20-240 US]$ sudo ln -sf /usr/share/zoneinfo/US/Hawaii /etc/localtime
+[ec2-user@ip-172-31-20-240 US]$ date
+Sun Dec 30 20:34:34 HST 2018
+
+====  On 2018-01-01, found that the firstrun.sh is incorrect.
+    Thus deregistered last two AMIs:
+      ami-0fdbef011d01cdf05
+      ami-07f53daa3a1b231c0
+    Then, deleted the 6 snapshots whose description contains the AMI Ids.
+
+    Rebuild AMI:
+      ==> Builds finished. The artifacts of successful builds are:
+      --> amazon-ebs: AMIs were created:
+      us-west-1: ami-0046368640f0a8665

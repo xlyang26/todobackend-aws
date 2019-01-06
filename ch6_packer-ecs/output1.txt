@@ -1,0 +1,145 @@
+# aws ec2 describe-vpcs  to check default vpc is there, otherwise create defaul vpc, options:
+#   1. aws ec2 create-default-vpc
+#   2. AWS VPC console -> Actions -> Create Default VPC -> Create
+#    
+# check AWS_PROFILE is set = charterscratch
+
+$ make build
+amazon-ebs output will be in this color.
+
+==> amazon-ebs: Prevalidating AMI Name: docker-in-aws-ecs 1546109890
+    amazon-ebs: Found Image ID: ami-0285183bbef6224bd
+==> amazon-ebs: Creating temporary keypair: packer_5c27c3c2-d13e-359f-a9db-329c7417bcbe
+==> amazon-ebs: Creating temporary security group for this instance: packer_5c27c3c3-c1af-98f8-8e9c-c633c6823324
+==> amazon-ebs: Authorizing access to port 22 from 0.0.0.0/0 in the temporary security group...
+==> amazon-ebs: Launching a source AWS instance...
+==> amazon-ebs: Adding tags to source instance
+    amazon-ebs: Adding tag: "Name": "Packer Builder"
+    amazon-ebs: Instance ID: i-03364b85c9a044793
+==> amazon-ebs: Waiting for instance (i-03364b85c9a044793) to become ready...
+==> amazon-ebs: Using ssh communicator to connect: 52.53.156.228
+==> amazon-ebs: Waiting for SSH to become available...
+==> amazon-ebs: Connected to SSH!
+==> amazon-ebs: Provisioning with shell script: /var/folders/gr/v8r6mvtd6hv1zpvth90g5fh40000gp/T/packer-shell262001352
+    amazon-ebs: Loaded plugins: priorities, update-motd, upgrade-helper
+    amazon-ebs: Resolving Dependencies
+    amazon-ebs: --> Running transaction check
+    amazon-ebs: ---> Package curl.x86_64 0:7.53.1-16.84.amzn1 will be updated
+    amazon-ebs: ---> Package curl.x86_64 0:7.53.1-16.85.amzn1 will be an update
+    amazon-ebs: ---> Package glibc.x86_64 0:2.17-222.173.amzn1 will be updated
+    amazon-ebs: ---> Package glibc.x86_64 0:2.17-260.175.amzn1 will be an update
+    amazon-ebs: ---> Package glibc-common.x86_64 0:2.17-222.173.amzn1 will be updated
+    amazon-ebs: ---> Package glibc-common.x86_64 0:2.17-260.175.amzn1 will be an update
+    amazon-ebs: ---> Package kernel.x86_64 0:4.14.88-72.73.amzn1 will be installed
+    amazon-ebs: ---> Package libcurl.x86_64 0:7.53.1-16.84.amzn1 will be updated
+    amazon-ebs: ---> Package libcurl.x86_64 0:7.53.1-16.85.amzn1 will be an update
+    amazon-ebs: ---> Package openssl.x86_64 1:1.0.2k-13.111.amzn1 will be updated
+    amazon-ebs: ---> Package openssl.x86_64 1:1.0.2k-16.146.amzn1 will be an update
+    amazon-ebs: ---> Package python27.x86_64 0:2.7.14-1.123.amzn1 will be updated
+    amazon-ebs: ---> Package python27.x86_64 0:2.7.15-1.124.amzn1 will be an update
+    amazon-ebs: ---> Package python27-libs.x86_64 0:2.7.14-1.123.amzn1 will be updated
+    amazon-ebs: ---> Package python27-libs.x86_64 0:2.7.15-1.124.amzn1 will be an update
+    amazon-ebs: --> Finished Dependency Resolution
+    amazon-ebs:
+    amazon-ebs: Dependencies Resolved
+    amazon-ebs:
+    amazon-ebs: ================================================================================
+    amazon-ebs:  Package           Arch       Version                    Repository        Size
+    amazon-ebs: ================================================================================
+    amazon-ebs: Installing:
+    amazon-ebs:  kernel            x86_64     4.14.88-72.73.amzn1        amzn-updates      21 M
+    amazon-ebs: Updating:
+    amazon-ebs:  curl              x86_64     7.53.1-16.85.amzn1         amzn-updates     330 k
+    amazon-ebs:  glibc             x86_64     2.17-260.175.amzn1         amzn-updates     5.8 M
+    amazon-ebs:  glibc-common      x86_64     2.17-260.175.amzn1         amzn-updates      28 M
+    amazon-ebs:  libcurl           x86_64     7.53.1-16.85.amzn1         amzn-updates     286 k
+    amazon-ebs:  openssl           x86_64     1:1.0.2k-16.146.amzn1      amzn-updates     1.8 M
+    amazon-ebs:  python27          x86_64     2.7.15-1.124.amzn1         amzn-updates     103 k
+    amazon-ebs:  python27-libs     x86_64     2.7.15-1.124.amzn1         amzn-updates     6.8 M
+    amazon-ebs:
+    amazon-ebs: Transaction Summary
+    amazon-ebs: ================================================================================
+    amazon-ebs: Install  1 Package
+    amazon-ebs: Upgrade  7 Packages
+    amazon-ebs:
+    amazon-ebs: Total download size: 64 M
+    amazon-ebs: Downloading packages:
+    amazon-ebs: --------------------------------------------------------------------------------
+    amazon-ebs: Total                                               22 MB/s |  64 MB  00:02
+    amazon-ebs: Running transaction check
+    amazon-ebs: Running transaction test
+    amazon-ebs: Transaction test succeeded
+    amazon-ebs: Running transaction
+    amazon-ebs:   Updating   : glibc-2.17-260.175.amzn1.x86_64                             1/15
+    amazon-ebs:   Updating   : glibc-common-2.17-260.175.amzn1.x86_64                      2/15
+    amazon-ebs:   Updating   : libcurl-7.53.1-16.85.amzn1.x86_64                           3/15
+    amazon-ebs:   Updating   : 1:openssl-1.0.2k-16.146.amzn1.x86_64                        4/15
+    amazon-ebs:   Updating   : python27-libs-2.7.15-1.124.amzn1.x86_64                     5/15
+    amazon-ebs:   Updating   : python27-2.7.15-1.124.amzn1.x86_64                          6/15
+    amazon-ebs:   Updating   : curl-7.53.1-16.85.amzn1.x86_64                              7/15
+    amazon-ebs:   Installing : kernel-4.14.88-72.73.amzn1.x86_64                           8/15
+    amazon-ebs:   Cleanup    : python27-libs-2.7.14-1.123.amzn1.x86_64                     9/15
+    amazon-ebs:   Cleanup    : python27-2.7.14-1.123.amzn1.x86_64                         10/15
+    amazon-ebs:   Cleanup    : curl-7.53.1-16.84.amzn1.x86_64                             11/15
+    amazon-ebs:   Cleanup    : libcurl-7.53.1-16.84.amzn1.x86_64                          12/15
+    amazon-ebs:   Cleanup    : 1:openssl-1.0.2k-13.111.amzn1.x86_64                       13/15
+    amazon-ebs:   Cleanup    : glibc-common-2.17-222.173.amzn1.x86_64                     14/15
+    amazon-ebs:   Cleanup    : glibc-2.17-222.173.amzn1.x86_64                            15/15
+    amazon-ebs:   Verifying  : kernel-4.14.88-72.73.amzn1.x86_64                           1/15
+    amazon-ebs:   Verifying  : python27-2.7.15-1.124.amzn1.x86_64                          2/15
+    amazon-ebs:   Verifying  : libcurl-7.53.1-16.85.amzn1.x86_64                           3/15
+    amazon-ebs:   Verifying  : python27-libs-2.7.15-1.124.amzn1.x86_64                     4/15
+    amazon-ebs:   Verifying  : glibc-common-2.17-260.175.amzn1.x86_64                      5/15
+    amazon-ebs:   Verifying  : glibc-2.17-260.175.amzn1.x86_64                             6/15
+    amazon-ebs:   Verifying  : curl-7.53.1-16.85.amzn1.x86_64                              7/15
+    amazon-ebs:   Verifying  : 1:openssl-1.0.2k-16.146.amzn1.x86_64                        8/15
+    amazon-ebs:   Verifying  : 1:openssl-1.0.2k-13.111.amzn1.x86_64                        9/15
+    amazon-ebs:   Verifying  : glibc-2.17-222.173.amzn1.x86_64                            10/15
+    amazon-ebs:   Verifying  : python27-libs-2.7.14-1.123.amzn1.x86_64                    11/15
+    amazon-ebs:   Verifying  : libcurl-7.53.1-16.84.amzn1.x86_64                          12/15
+    amazon-ebs:   Verifying  : glibc-common-2.17-222.173.amzn1.x86_64                     13/15
+    amazon-ebs:   Verifying  : curl-7.53.1-16.84.amzn1.x86_64                             14/15
+    amazon-ebs:   Verifying  : python27-2.7.14-1.123.amzn1.x86_64                         15/15
+    amazon-ebs:
+    amazon-ebs: Installed:
+    amazon-ebs:   kernel.x86_64 0:4.14.88-72.73.amzn1
+    amazon-ebs:
+    amazon-ebs: Updated:
+    amazon-ebs:   curl.x86_64 0:7.53.1-16.85.amzn1
+    amazon-ebs:   glibc.x86_64 0:2.17-260.175.amzn1
+    amazon-ebs:   glibc-common.x86_64 0:2.17-260.175.amzn1
+    amazon-ebs:   libcurl.x86_64 0:7.53.1-16.85.amzn1
+    amazon-ebs:   openssl.x86_64 1:1.0.2k-16.146.amzn1
+    amazon-ebs:   python27.x86_64 0:2.7.15-1.124.amzn1
+    amazon-ebs:   python27-libs.x86_64 0:2.7.15-1.124.amzn1
+    amazon-ebs:
+    amazon-ebs: Complete!
+==> amazon-ebs: Stopping the source instance...
+    amazon-ebs: Stopping instance, attempt 1
+==> amazon-ebs: Waiting for the instance to stop...
+==> amazon-ebs: Creating unencrypted AMI docker-in-aws-ecs 1546109890 from instance i-03364b85c9a044793
+    amazon-ebs: AMI: ami-05598be4ea58f38d6
+==> amazon-ebs: Waiting for AMI to become ready...
+==> amazon-ebs: Adding tags to AMI (ami-05598be4ea58f38d6)...
+==> amazon-ebs: Tagging snapshot: snap-05e7cb2a26232dc00
+==> amazon-ebs: Tagging snapshot: snap-01d240e5e1aefb0e5
+==> amazon-ebs: Creating AMI tags
+    amazon-ebs: Adding tag: "SourceAMI": "ami-0285183bbef6224bd"
+    amazon-ebs: Adding tag: "DockerVersion": "17.09.1-ce"
+    amazon-ebs: Adding tag: "ECSAgentVersion": "1.17.0-2"
+    amazon-ebs: Adding tag: "Name": "Docker in AWS ECS Base Image 2017.09.h"
+==> amazon-ebs: Creating snapshot tags
+==> amazon-ebs: Terminating the source AWS instance...
+==> amazon-ebs: Cleaning up any extra volumes...
+==> amazon-ebs: No volumes to clean up, skipping
+==> amazon-ebs: Deleting temporary security group...
+==> amazon-ebs: Deleting temporary keypair...
+==> amazon-ebs: Running post-processor: manifest
+Build 'amazon-ebs' finished.
+
+==> Builds finished. The artifacts of successful builds are:
+--> amazon-ebs: AMIs were created:
+us-west-1: ami-05598be4ea58f38d6
+
+--> amazon-ebs: 
+$
