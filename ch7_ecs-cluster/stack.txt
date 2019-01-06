@@ -1,0 +1,160 @@
+LYang-MBPro:ch7_ecs-cluster lyang$ pwd
+/Users/lyang/workspace/todobackend-aws/ch7_ecs-cluster
+LYang-MBPro:ch7_ecs-cluster lyang$ tree
+.
+├── stack.txt
+└── stack.yml
+
+0 directories, 2 files
+LYang-MBPro:ch7_ecs-cluster lyang$ aws cloudformation deploy --template-file stack.yml --stack-name todobackend
+
+Waiting for changeset to be created..
+Waiting for stack create/update to complete
+Successfully created/updated stack - todobackend
+LYang-MBPro:ch7_ecs-cluster lyang$ aws ecs list-clusters
+{
+    "clusterArns": [
+        "arn:aws:ecs:us-west-1:422152100797:cluster/todobackend-cluster",
+        "arn:aws:ecs:us-west-1:422152100797:cluster/default"
+    ]
+}
+LYang-MBPro:ch7_ecs-cluster lyang$ aws ec2 describe-subnets --query "Subnets[].[SubnetId,AvailabilityZone]" --output table
+--------------------------------------------
+|              DescribeSubnets             |
++---------------------------+--------------+
+|  subnet-0fca113c32353bbf3 |  us-west-1a  |
+|  subnet-06786e11f7678bd15 |  us-west-1b  |
+|  subnet-18f8ff7f          |  us-west-1b  |
+|  subnet-ad6635f6          |  us-west-1a  |
+|  subnet-09ac7c9c4fad79b1f |  us-west-1b  |
+|  subnet-bb7c2fe0          |  us-west-1a  |
+|  subnet-0433126bff1b3d694 |  us-west-1b  |
+|  subnet-0c21039a6cd727e0a |  us-west-1a  |
+|  subnet-0e277f35f942064da |  us-west-1a  |
+|  subnet-0863c598ccfabe5be |  us-west-1b  |
+|  subnet-0d0ba1cb016ac4b5f |  us-west-1a  |
+|  subnet-004fa511b0e0a4b9d |  us-west-1b  |
+|  subnet-4160331a          |  us-west-1a  |
+|  subnet-084f9a56cc6b36e2c |  us-west-1a  |
+|  subnet-0b75eb11b08af7888 |  us-west-1b  |
+|  subnet-6df8ff0a          |  us-west-1b  |
+|  subnet-06fd044bc6d111408 |  us-west-1b  |
+|  subnet-0768d37e0acf43d29 |  us-west-1b  |
+|  subnet-e18dde84          |  us-west-1b  |
+|  subnet-05f9611fafa3f3f5c |  us-west-1b  |
+|  subnet-06e8180fea2f3fdf0 |  us-west-1b  |
+|  subnet-896734d2          |  us-west-1a  |
++---------------------------+--------------+
+LYang-MBPro:files lyang$ aws ec2 describe-vpcs
+{
+    "Vpcs": [
+        ...
+        {
+            "CidrBlock": "172.31.0.0/16",
+            "DhcpOptionsId": "dopt-a3aba5c1",
+            "State": "available",
+            "VpcId": "vpc-0185c8eca5407b504",
+            "OwnerId": "422152100797",
+            "InstanceTenancy": "default",
+            "CidrBlockAssociationSet": [
+                {
+                    "AssociationId": "vpc-cidr-assoc-0b82c4cb194fa387c",
+                    "CidrBlock": "172.31.0.0/16",
+                    "CidrBlockState": {
+                        "State": "associated"
+                    }
+                }
+            ],
+            "IsDefault": true,
+            "Tags": [
+                {
+                    "Key": "Name",
+                    "Value": "ly-dckr-default-vpc"
+                }
+            ]
+        },
+        ...
+    ]
+}
+LYang-MBPro:ch7_ecs-cluster lyang$ aws cloudformation deploy --template-file stack.yml --stack-name todobackend --parameter-overrides $(cat dev.cfg) --capabilities CAPABILITY_NAMED_IAM
+
+Waiting for changeset to be created..
+Waiting for stack create/update to complete
+
+Failed to create/update the stack. Run the following command
+to fetch the list of events leading up to the failure
+aws cloudformation describe-stack-events --stack-name todobackend
+LYang-MBPro:ch7_ecs-cluster lyang$ aws cloudformation describe-stack-events --stack-name todobackend
+{
+    "StackEvents": [
+        ...
+        {
+            "StackId": "arn:aws:cloudformation:us-west-1:422152100797:stack/todobackend/9c8b86f0-0dcc-11e9-b39a-50841f1f4ec5",
+            "EventId": "ApplicationAutoscalingSecurityGroup-CREATE_FAILED-2019-01-01T22:59:19.848Z",
+            "StackName": "todobackend",
+            "LogicalResourceId": "ApplicationAutoscalingSecurityGroup",
+            "PhysicalResourceId": "todobackend-ApplicationAutoscalingSecurityGroup-UKQYQFO8DL7S",
+            "ResourceType": "AWS::EC2::SecurityGroup",
+            "Timestamp": "2019-01-01T22:59:19.848Z",
+            "ResourceStatus": "CREATE_FAILED",
+            "ResourceStatusReason": "Resource creation cancelled",
+            "ResourceProperties": "{\"GroupDescription\":\"todobackend Application Autoscaling Security Group\",\"VpcId\":\"vpc-0185c8eca5407b504\",\"SecurityGroupIngress\":[{\"CidrIp\":\"0.0.0.0/0\",\"FromPort\":\"22\",\"ToPort\":\"22\",\"IpProtocol\":\"tcp\"}],\"SecurityGroupEgress\":[{\"CidrIp\":\"0.0.0.0/0\",\"FromPort\":\"53\",\"ToPort\":\"53\",\"IpProtocol\":\"tcp\"},{\"CidrIp\":\"0.0.0.0/0\",\"FromPort\":\"80\",\"ToPort\":\"80\",\"IpProtocol\":\"tcp\"},{\"CidrIp\":\"0.0.0.0/0\",\"FromPort\":\"443\",\"ToPort\":\"443\",\"IpProtocol\":\"tcp\"}]}"
+        },
+        {
+            "StackId": "arn:aws:cloudformation:us-west-1:422152100797:stack/todobackend/9c8b86f0-0dcc-11e9-b39a-50841f1f4ec5",
+            "EventId": "ApplicationAutoscalingInstanceRole-CREATE_FAILED-2019-01-01T22:59:15.726Z",
+            "StackName": "todobackend",
+            "LogicalResourceId": "ApplicationAutoscalingInstanceRole",
+            "PhysicalResourceId": "",
+            "ResourceType": "AWS::IAM::Role",
+            "Timestamp": "2019-01-01T22:59:15.726Z",
+            "ResourceStatus": "CREATE_FAILED",
+            "ResourceStatusReason": "Unknown field Policies (Service: AmazonIdentityManagement; Status Code: 400; Error Code: MalformedPolicyDocument; Request ID: dc922573-0e18-11e9-9a61-5f92db249a75)",
+            "ResourceProperties": "{\"AssumeRolePolicyDocument\":{\"Policies\":[{\"PolicyName\":\"ECSContainerInstancePermissions\",\"PolicyDocument\":{\"Version\":\"2012-10-17\",\"Statement\":[{\"Action\":[\"ecs:RegisterContainerInstance\",\"ecs.DeregisterContainerInstance\",\"ecs.UpdateContainerInstance\"],\"Resource\":\"arn:aws:ecs:us-west-1:422152100797:cluster/todobackend-cluster\",\"Effect\":\"Allow\"},{\"Action\":[\"ecs:DiscoverPollEndpoint\",\"ecs.Submit*\",\"ecs.Poll\",\"ecs.StartTelemetrySession\"],\"Resource\":\"*\",\"Effect\":\"Allow\"},{\"Action\":[\"ecs:BatchCheckLayerAvailability\",\"ecs.BatchGetImage\",\"ecs.GetDownloadUrlForLayer\",\"ecs.GetAuthorizationToken\"],\"Resource\":\"*\",\"Effect\":\"Allow\"},{\"Action\":[\"logs:CreateLogGroup\",\"logs:CreateLogStream\",\"logs.PutLogEvents\",\"logs:DescribeLogStreams\"],\"Resource\":\"arn:aws:logs:us-west-1:422152100797:log-group:/todobackend*\",\"Effect\":\"Allow\"}]}}],\"Version\":\"2012-10-17\",\"Statement\":[{\"Action\":[\"sts:AssumeRole\"],\"Effect\":\"Allow\",\"Principal\":{\"Service\":[\"ec2.amazonaws.com\"]}}]}}"
+        },
+        ...
+   ]
+}
+
+===  After fixing policy document, update failed, in aws console/CloudFormation: 
+        The key pair 'admin' does not exist (Service: AmazonAutoScaling; Status Code: 400; Error Code: ValidationError..)
+     Fix: Replaced 'admin' with 'ly-dckr-on-aws-admin3'.  === 
+
+===  New error:
+        One or more security groups in the launch configuration are not linked to the VPCs configured
+        in the Auto Scaling group (Service: AmazonAutoScaling; Status Code: 400; Error Code: ValidationError..) 
+     Fix:
+
+==================   On 01/05/2019:    ==================
+From AWS console (VPC Dashboard->Subnets) found that there are two subnet id associated my vpc (vpcId: 
+vpc-0185c8eca5407b504), I only had one of them in the dev.cfg,
+so added the missing one (subnet-05f9611fafa3f3f5c). Deleted the todobackend cluster, and re-deploy:
+
+LYang-MBPro:ch7_ecs-cluster lyang$ aws cloudformation deploy --template-file stack.yml --stack-name todobackend --parameter-overrides $(cat dev.cfg) --capabilities CAPABILITY_NAMED_IAM
+
+Waiting for changeset to be created..
+Waiting for stack create/update to complete
+Successfully created/updated stack - todobackend
+LYang-MBPro:ch7_ecs-cluster lyang$ date
+Sat Jan  5 11:54:30 MST 2019
+
+=== added name for my two subnets 'ly-dckr-in-aws' ===
+LYang-MBPro:ch7_ecs-cluster lyang$ 
+LYang-MBPro:ch7_ecs-cluster lyang$ aws ecs describe-clusters --cluster todobackend-cluster
+{
+    "clusters": [
+        {
+            "clusterArn": "arn:aws:ecs:us-west-1:422152100797:cluster/todobackend-cluster",
+            "clusterName": "todobackend-cluster",
+            "status": "ACTIVE",
+            "registeredContainerInstancesCount": 1,
+            "runningTasksCount": 0,
+            "pendingTasksCount": 0,
+            "activeServicesCount": 0,
+            "statistics": [],
+            "tags": []
+        }
+    ],
+    "failures": []
+}
+LYang-MBPro:ch7_ecs-cluster lyang$
