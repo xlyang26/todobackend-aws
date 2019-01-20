@@ -1,0 +1,343 @@
+$ echo $AWS_PROFILE 
+charterscratch
+
+$ aws cloudformation deploy --template-file stack.yml --stack-name todobackend --parameter-overrides $(cat dev.cfg) --capabilities CAPABILITY_NAMED_IAM
+
+An error occurred (ValidationError) when calling the CreateChangeSet operation: Template format error: Unresolved resource dependencies [ApplictionDatabaseSecurityGroup] in the Resources block of the template
+
+===  Typo: missing 'a' in 'Application', fixed  ===
+$ 
+$ aws cloudformation deploy --template-file stack.yml --stack-name todobackend --parameter-overrides $(cat dev.cfg) --capabilities CAPABILITY_NAMED_IAM
+
+Waiting for changeset to be created..
+Waiting for stack create/update to complete
+Successfully created/updated stack - todobackend
+
+$ aws cloudformation describe-stack-resource --stack-name todobackend --logical-resource-id ApplicationDatabase
+{
+    "StackResourceDetail": {
+        "StackName": "todobackend",
+        "StackId": "arn:aws:cloudformation:us-west-1:422152100797:stack/todobackend/b76d0d30-111a-11e9-88d4-0643c616f9aa",
+        "LogicalResourceId": "ApplicationDatabase",
+        "PhysicalResourceId": "takfm0lhwslvud",
+        "ResourceType": "AWS::RDS::DBInstance",
+        "LastUpdatedTimestamp": "2019-01-07T01:10:29.658Z",
+        "ResourceStatus": "CREATE_COMPLETE",
+        "Metadata": "{}",
+        "DriftInformation": {
+            "StackResourceDriftStatus": "NOT_CHECKED"
+        }
+    }
+}
+
+$ aws rds describe-db-instances --db-instance-identifier takfm0lhwslvud
+{
+    "DBInstances": [
+        {
+            "DBInstanceIdentifier": "takfm0lhwslvud",
+            "DBInstanceClass": "db.t2.micro",
+            "Engine": "mysql",
+            "DBInstanceStatus": "available",
+            "MasterUsername": "todobackend",
+            "DBName": "todobackend",
+            "Endpoint": {
+                "Address": "takfm0lhwslvud.co5uosi81jdl.us-west-1.rds.amazonaws.com",
+                "Port": 3306,
+                "HostedZoneId": "Z10WI91S59XXQN"
+            },
+            "AllocatedStorage": 10,
+            "InstanceCreateTime": "2019-01-07T01:07:45.692Z",
+            "PreferredBackupWindow": "12:07-12:37",
+            "BackupRetentionPeriod": 1,
+            "DBSecurityGroups": [],
+            "VpcSecurityGroups": [
+                {
+                    "VpcSecurityGroupId": "sg-08027f89e43b97cd0",
+                    "Status": "active"
+                }
+            ],
+            "DBParameterGroups": [
+                {
+                    "DBParameterGroupName": "default.mysql5.7",
+                    "ParameterApplyStatus": "in-sync"
+                }
+            ],
+            "AvailabilityZone": "us-west-1a",
+            "DBSubnetGroup": {
+                "DBSubnetGroupName": "todobackend-applicationdatabasesubnetgroup-1ojnwrcr2dfos",
+                "DBSubnetGroupDescription": "Application Database Subnet Group",
+                "VpcId": "vpc-0185c8eca5407b504",
+                "SubnetGroupStatus": "Complete",
+                "Subnets": [
+                    {
+                        "SubnetIdentifier": "subnet-084f9a56cc6b36e2c",
+                        "SubnetAvailabilityZone": {
+                            "Name": "us-west-1a"
+                        },
+                        "SubnetStatus": "Active"
+                    },
+                    {
+                        "SubnetIdentifier": "subnet-05f9611fafa3f3f5c",
+                        "SubnetAvailabilityZone": {
+                            "Name": "us-west-1b"
+                        },
+                        "SubnetStatus": "Active"
+                    }
+                ]
+            },
+            "PreferredMaintenanceWindow": "mon:11:28-mon:11:58",
+            "PendingModifiedValues": {},
+            "LatestRestorableTime": "2019-01-07T01:20:00Z",
+            "MultiAZ": false,
+            "EngineVersion": "5.7.23",
+            "AutoMinorVersionUpgrade": true,
+            "ReadReplicaDBInstanceIdentifiers": [],
+            "LicenseModel": "general-public-license",
+            "OptionGroupMemberships": [
+                {
+                    "OptionGroupName": "default:mysql-5-7",
+                    "Status": "in-sync"
+                }
+            ],
+            "PubliclyAccessible": false,
+            "StorageType": "gp2",
+            "DbInstancePort": 0,
+            "StorageEncrypted": false,
+            "DbiResourceId": "db-SQNDK6E6OXTZSLJY42TSUVAX7A",
+            "CACertificateIdentifier": "rds-ca-2015",
+            "DomainMemberships": [],
+            "CopyTagsToSnapshot": false,
+            "MonitoringInterval": 0,
+            "DBInstanceArn": "arn:aws:rds:us-west-1:422152100797:db:takfm0lhwslvud",
+            "IAMDatabaseAuthenticationEnabled": false,
+            "PerformanceInsightsEnabled": false,
+            "DeletionProtection": false
+        }
+    ]
+}
+
+$ === deploy load balancer ===
+$ aws cloudformation deploy --template-file stack.yml --stack-name todobackend --parameter-overrides $(cat dev.cfg) --capabilities CAPABILITY_NAMED_IAM
+
+Waiting for changeset to be created..
+Waiting for stack create/update to complete
+Successfully created/updated stack - todobackend
+
+$ aws cloudformation describe-stacks --stack-name todobackend --query Stacks[].Outputs[]
+[
+    {
+        "OutputKey": "PublicURL",
+        "OutputValue": "todob-Appli-1BDYV91YI9B0O-224125298.us-west-1.elb.amazonaws.com",
+        "Description": "Public DNS name of Application Load Balancer"
+    }
+]
+$ curl todob-Appli-1BDYV91YI9B0O-224125298.us-west-1.elb.amazonaws.com
+<html>
+<head><title>503 Service Temporarily Unavailable</title></head>
+<body bgcolor="white">
+<center><h1>503 Service Temporarily Unavailable</h1></center>
+</body>
+</html>
+
+===  deploy ECS task definitions using CloudFormation  ===
+$ aws cloudformation deploy --template-file stack.yml --stack-name todobackend --parameter-overrides $(cat dev.cfg) --capabilities CAPABILITY_NAMED_IAM
+
+Waiting for changeset to be created..
+Waiting for stack create/update to complete
+Successfully created/updated stack - todobackend
+
+$ aws ecs describe-task-definition --task-definition todobackend
+{
+    "taskDefinition": {
+        "taskDefinitionArn": "arn:aws:ecs:us-west-1:422152100797:task-definition/todobackend:1",
+        "containerDefinitions": [
+            {
+                "name": "todobackend",
+                "image": "422152100797.dkr.ecr.us-west-1.amazonaws.com/docker-in-aws/todobackend:latest",
+                "cpu": 245,
+                "memoryReservation": 395,
+                "links": [],
+                "portMappings": [
+                    {
+                        "containerPort": 8000,
+                        "hostPort": 0,
+                        "protocol": "tcp"
+                    }
+                ],
+                "essential": true,
+                "entryPoint": [],
+                "command": [
+                    "uwsgi",
+                    "--http=0.0.0.0:8000",
+                    "--module=todobackend.wsgi",
+                    "--master",
+                    "--die-on-term",
+                    "--processes=4",
+                    "--threads=2",
+                    "--check-static=/public"
+                ],
+                "environment": [
+                    {
+                        "name": "DJANGO_SETTINGS_MODULE",
+                        "value": "todobackend.settings_release"
+                    },
+                    {
+                        "name": "MYSQL_DATABASE",
+                        "value": "todobackend"
+                    },
+                    {
+                        "name": "SECRET_KEY",
+                        "value": "some-random-secret-should-be-here"
+                    },
+                    {
+                        "name": "MYSQL_PASSWORD",
+                        "value": "my-super-secret-password"
+                    },
+                    {
+                        "name": "MYSQL_HOST",
+                        "value": "takfm0lhwslvud.co5uosi81jdl.us-west-1.rds.amazonaws.com"
+                    },
+                    {
+                        "name": "MYSQL_USER",
+                        "value": "todobackend"
+                    }
+                ],
+                "mountPoints": [
+                    {
+                        "sourceVolume": "public",
+                        "containerPath": "/public"
+                    }
+                ],
+                "volumesFrom": [],
+                "dnsServers": [],
+                "dnsSearchDomains": [],
+                "extraHosts": [],
+                "dockerSecurityOptions": [],
+                "dockerLabels": {},
+                "ulimits": [],
+                "logConfiguration": {
+                    "logDriver": "awslogs",
+                    "options": {
+                        "awslogs-group": "/todobackend/ecs/todobackend",
+                        "awslogs-region": "us-west-1",
+                        "awslogs-stream-prefix": "docker"
+                    }
+                }
+            },
+            {
+                "name": "collectstatic",
+                "image": "422152100797.dkr.ecr.us-west-1.amazonaws.com/docker-in-aws/todobackend:latest",
+                "cpu": 5,
+                "memoryReservation": 5,
+                "links": [],
+                "portMappings": [],
+                "essential": false,
+                "entryPoint": [],
+                "command": [
+                    "python3",
+                    "manage.py",
+                    "collectstatic",
+                    "--no-input"
+                ],
+                "environment": [
+                    {
+                        "name": "DJANGO_SETTIONS_MODULE",
+                        "value": "todobackend.settings_release"
+                    }
+                ],
+                "mountPoints": [
+                    {
+                        "sourceVolume": "public",
+                        "containerPath": "/public"
+                    }
+                ],
+                "volumesFrom": [],
+                "dnsServers": [],
+                "dnsSearchDomains": [],
+                "extraHosts": [],
+                "dockerSecurityOptions": [],
+                "dockerLabels": {},
+                "ulimits": [],
+                "logConfiguration": {
+                    "logDriver": "awslogs",
+                    "options": {
+                        "awslogs-group": "/todobackend/ecs/todobackend",
+                        "awslogs-region": "us-west-1",
+                        "awslogs-stream-prefix": "docker"
+                    }
+                }
+            }
+        ],
+        "family": "todobackend",
+        "revision": 1,
+        "volumes": [
+            {
+                "name": "public",
+                "host": {
+                    "sourcePath": "/data/public"
+                }
+            }
+        ],
+        "status": "ACTIVE",
+        "requiresAttributes": [
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.17"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.ecr-auth"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.21"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+            }
+        ],
+        "placementConstraints": [],
+        "compatibilities": [
+            "EC2"
+        ],
+        "requiresCompatibilities": []
+    }
+}
+
+=== deploy ECS service using CloudFormation ===
+$ aws cloudformation deploy --template-file stack.yml --stack-name todobackend --parameter-overrides $(cat dev.cfg) --capabilities CAPABILITY_NAMED_IAM
+
+Waiting for changeset to be created..
+Waiting for stack create/update to complete
+
+Failed to create/update the stack. Run the following command
+to fetch the list of events leading up to the failure
+aws cloudformation describe-stack-events --stack-name todobackend
+LYang-MBPro:ch8_deploy-app-using-ecs lyang$ aws cloudformation describe-stack-events --stack-name todobackend
+{
+    "StackEvents": [
+    ... 
+        {
+            "StackId": "arn:aws:cloudformation:us-west-1:422152100797:stack/todobackend/b76d0d30-111a-11e9-88d4-0643c616f9aa",
+            "EventId": "ApplicationService-CREATE_FAILED-2019-01-07T03:51:29.383Z",
+            "StackName": "todobackend",
+            "LogicalResourceId": "ApplicationService",
+            "PhysicalResourceId": "",
+            "ResourceType": "AWS::ECS::Service",
+            "Timestamp": "2019-01-07T03:51:29.383Z",
+            "ResourceStatus": "CREATE_FAILED",
+            "ResourceStatusReason": "Encountered unsupported property MinimemPercent"
+        },  
+     ...
+
+===  fixed typo: 'Minimem', again failed: "Encountered unsupported property MinimumPercent". The property should be "MinimumHealthyPercent" ===
+
+===  Notes on 1-20-2019:  === 
+The cloudformation stack todobackend was never able to stand up.
+Finally found the problem when working in ch9, that the ECR repository name was incorrect - from book it is 'docker-in-aws', but it should be 
+'dckr-in-aws' - since that's the name I defined when I created the ECR.
+The stack script (stack.yml)  can't find the docker image. Correct setting is:
+   Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/dckr-in-aws/todobackend:${ApplicationImageTag}
