@@ -1,0 +1,211 @@
+=== before private nat gateway deployment  ===
+$ echo $AWS_PROFILE
+dckr-in-aws
+
+$ aws ec2 describe-vpcs --query Vpcs[].CidrBlock
+[
+    "10.0.0.0/16",
+    "10.0.0.0/16",
+    "10.0.0.0/16",
+    "172.28.0.0/16",
+    "172.31.0.0/16",
+    "10.0.0.0/16",
+    "10.0.0.0/16",
+    "10.0.0.0/16",
+    "10.0.0.0/16",
+    "10.0.0.0/16"
+]
+
+$ aws ec2 describe-subnets --query Subnets[].CidrBlock
+[
+    "10.0.0.0/25",
+    "172.28.0.0/16",
+    "10.0.10.0/23",
+    "10.0.0.0/24",
+    "10.0.0.128/25",
+    "10.0.1.0/24",
+    "10.0.1.0/24",
+    "10.0.0.0/25",
+    "10.0.0.0/25",
+    "10.0.1.0/24",
+    "10.0.0.0/25",
+    "10.0.1.0/24",
+    "10.0.0.0/23",
+    "172.31.0.0/20",
+    "10.0.0.128/25",
+    "10.0.0.0/23",
+    "10.0.1.0/24",
+    "10.0.0.128/25",
+    "10.0.0.0/24",
+    "172.31.16.0/20",
+    "10.0.0.128/25",
+    "10.0.10.0/23"
+]
+
+$ aws ec2 describe-subnets --query Subnets[].[AvailabilityZone,SubnetId] --output table
+--------------------------------------------
+|              DescribeSubnets             |
++-------------+----------------------------+
+|  us-west-1a |  subnet-0fca113c32353bbf3  |
+|  us-west-1b |  subnet-06786e11f7678bd15  |
+|  us-west-1b |  subnet-18f8ff7f           |
+|  us-west-1a |  subnet-ad6635f6           |
+|  us-west-1b |  subnet-09ac7c9c4fad79b1f  |
+|  us-west-1a |  subnet-bb7c2fe0           |
+|  us-west-1b |  subnet-0433126bff1b3d694  |
+|  us-west-1a |  subnet-0c21039a6cd727e0a  |
+|  us-west-1a |  subnet-0e277f35f942064da  |
+|  us-west-1b |  subnet-0863c598ccfabe5be  |
+|  us-west-1a |  subnet-0d0ba1cb016ac4b5f  |
+|  us-west-1b |  subnet-004fa511b0e0a4b9d  |
+|  us-west-1a |  subnet-4160331a           |
+|  us-west-1a |  subnet-084f9a56cc6b36e2c  |
+|  us-west-1b |  subnet-0b75eb11b08af7888  |
+|  us-west-1b |  subnet-6df8ff0a           |
+|  us-west-1b |  subnet-06fd044bc6d111408  |
+|  us-west-1b |  subnet-0768d37e0acf43d29  |
+|  us-west-1b |  subnet-e18dde84           |
+|  us-west-1b |  subnet-05f9611fafa3f3f5c  |
+|  us-west-1b |  subnet-06e8180fea2f3fdf0  |
+|  us-west-1a |  subnet-896734d2           |
++-------------+----------------------------+
+
+=== after ===
+--------------------------------------------
+|              DescribeSubnets             |
++-------------+----------------------------+
+|  us-west-1a |  subnet-0fca113c32353bbf3  |
+|  us-west-1b |  subnet-06786e11f7678bd15  |
+|  us-west-1b |  subnet-18f8ff7f           |
+|  us-west-1a |  subnet-ad6635f6           |
+|  us-west-1b |  subnet-09ac7c9c4fad79b1f  |
+|  us-west-1a |  subnet-bb7c2fe0           |
+|  us-west-1b |  subnet-0433126bff1b3d694  |
+|  us-west-1a |  subnet-0c21039a6cd727e0a  |
+|  us-west-1a |  subnet-0e277f35f942064da  |
+|  us-west-1b |  subnet-0863c598ccfabe5be  |
+|  us-west-1a |  subnet-0d0ba1cb016ac4b5f  |
+|  us-west-1b |  subnet-004fa511b0e0a4b9d  |
+|  us-west-1a |  subnet-4160331a           |
+|  us-west-1a |  subnet-084f9a56cc6b36e2c  |
+|  us-west-1b |  subnet-0b75eb11b08af7888  |
+|  us-west-1b |  subnet-6df8ff0a           |
+|  us-west-1b |  subnet-06fd044bc6d111408  |
+|  us-west-1b |  subnet-0768d37e0acf43d29  |
+|  us-west-1b |  subnet-e18dde84           |
+|  us-west-1a |  subnet-0ab05e5c2ecf6fed5  |  <=== newly created
+|  us-west-1b |  subnet-05f9611fafa3f3f5c  |
+|  us-west-1b |  subnet-06e8180fea2f3fdf0  |
+|  us-west-1a |  subnet-896734d2           |
++-------------+----------------------------+
+
+$ aws ec2 describe-subnets --query "Subnets[?CidrBlock=='172.31.96.0/20'].SubnetId"
+[
+    "subnet-0ab05e5c2ecf6fed5"
+]
+
+$ aws ec2 describe-nat-gateways
+{
+    "NatGateways": [
+        {
+            ...
+        },
+        {
+            "CreateTime": "2019-01-21T21:35:44.000Z",
+            "NatGatewayAddresses": [
+                {
+                    "AllocationId": "eipalloc-05535f76bdb66a385",
+                    "NetworkInterfaceId": "eni-0ec3844e251109852",
+                    "PrivateIp": "172.31.1.213",
+                    "PublicIp": "184.169.208.145"
+                }
+            ],
+            "NatGatewayId": "nat-03ec31b15b07bf81c",
+            "State": "available",
+            "SubnetId": "subnet-084f9a56cc6b36e2c",
+            "VpcId": "vpc-0185c8eca5407b504",
+            "Tags": [
+                {
+                    "Key": "aws:cloudformation:stack-id",
+                    "Value": "arn:aws:cloudformation:us-west-1:422152100797:stack/todobackend/40159890-1cbb-11e9-b77a-0204f002acaa"
+                },
+                {
+                    "Key": "aws:cloudformation:stack-name",
+                    "Value": "todobackend"
+                },
+                {
+                    "Key": "aws:cloudformation:logical-id",
+                    "Value": "NatGateway"
+                }
+            ]
+        },
+        ...
+
+$ aws ec2 describe-subnets --query Subnets[].CidrBlock
+[
+    "10.0.0.0/25",
+    "172.28.0.0/16",
+    "10.0.10.0/23",
+    "10.0.0.0/24",
+    "10.0.0.128/25",
+    "10.0.1.0/24",
+    "10.0.1.0/24",
+    "10.0.0.0/25",
+    "10.0.0.0/25",
+    "10.0.1.0/24",
+    "10.0.0.0/25",
+    "10.0.1.0/24",
+    "10.0.0.0/23",
+    "172.31.0.0/20",
+    "10.0.0.128/25",
+    "10.0.0.0/23",
+    "10.0.1.0/24",
+    "10.0.0.128/25",
+    "10.0.0.0/24",
+    "172.31.96.0/20",
+    "172.31.16.0/20",   <== created
+    "10.0.0.128/25",
+    "10.0.10.0/23"
+]
+
+$ aws ec2 describe-internet-gateways
+{
+    "InternetGateways": [
+        ...
+        {
+            "Attachments": [
+                {
+                    "State": "available",
+                    "VpcId": "vpc-0185c8eca5407b504"
+                }
+            ],
+            "InternetGatewayId": "igw-064cef028228de687",
+            "OwnerId": "422152100797",
+            "Tags": []
+        },
+        ...
+   ]
+}
+
+$ aws ec2 describe-route-tables --query "RouteTables[].Routes[?DestinationCidrBlock=='0.0.0.0/0']"
+[
+   ...
+   [
+        {
+            "DestinationCidrBlock": "0.0.0.0/0",
+            "GatewayId": "igw-064cef028228de687",
+            "Origin": "CreateRoute",
+            "State": "active"
+        }
+    ],
+   ...
+   [
+        {
+            "DestinationCidrBlock": "0.0.0.0/0",
+            "NatGatewayId": "nat-03ec31b15b07bf81c",
+            "Origin": "CreateRoute",
+            "State": "active"
+        }
+    ], 
+    ...
+]
