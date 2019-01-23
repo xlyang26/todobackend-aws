@@ -103,6 +103,8 @@ $ aws ec2 describe-subnets --query "Subnets[?CidrBlock=='172.31.96.0/20'].Subnet
 [
     "subnet-0ab05e5c2ecf6fed5"
 ]
+===========   Notes:   ==============
+  I have to re-create the todobackend stack, and the new subnet is: "subnet-0e463f37192204644", which is put into dev.cfg as PrivateSubnets.
 
 $ aws ec2 describe-nat-gateways
 {
