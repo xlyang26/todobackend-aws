@@ -1,0 +1,264 @@
+* In region us-west-1, N. California, you can't create eks clusters.
+* Switched to admin role, created access ID/key.
+* Set region to us-west-2, Oregon.
+
+$ aws ec2 describe-vpcs --query Vpcs[].[VpcId,IsDefault] --output table
+------------------------------------
+|           DescribeVpcs           |
++------------------------+---------+
+|  vpc-b93167d2          |  False  |
+|  vpc-cc481da7          |  True   |
+|  vpc-07c637412b83418ce |  False  |
+|  vpc-09147c46fd9cbfe68 |  False  |
+|  vpc-01efdb69c902b7e48 |  False  |
++------------------------+---------+
+
+$ aws ec2 describe-subnets --query 'Subnets[].[SubnetId,AvailabilityZone,CidrBlock]' --output table
+---------------------------------------------------------------
+|                       DescribeSubnets                       |
++---------------------------+-------------+-------------------+
+|  subnet-0d3f6966          |  us-west-2c |  10.2.2.128/25    |
+|  subnet-644cd903          |  us-west-2a |  172.31.104.0/23  |
+|  subnet-0ce2f3f35e6b8afc4 |  us-west-2a |  10.0.2.0/25      |
+|  subnet-c3481da8          |  us-west-2b |  172.31.16.0/20   |
+|  subnet-006e05ee5bdc1f3b5 |  us-west-2a |  10.0.1.0/25      |
+|  subnet-ab6dc2e2          |  us-west-2b |  172.31.102.0/23  |
+|  subnet-c2481da9          |  us-west-2a |  172.31.32.0/20   |
+|  subnet-533c6a38          |  us-west-2b |  10.2.5.0/25      |
+|  subnet-0d0133a402e791c44 |  us-west-2a |  10.0.0.0/26      |
+|  subnet-aa6dc2e3          |  us-west-2b |  172.31.106.0/23  |
+|  subnet-0bfa70108a21bd7aa |  us-west-2a |  10.0.0.192/26    |
+|  subnet-0d446157          |  us-west-2c |  172.31.200.0/24  |
+|  subnet-0a947f05c6c125a54 |  us-west-2b |  10.0.1.128/25    |
+|  subnet-03861bc1565a4921b |  us-west-2b |  10.0.0.64/26     |
+|  subnet-04072ec2887ec1998 |  us-west-2c |  10.0.0.128/26    |
+|  subnet-c1481daa          |  us-west-2c |  172.31.0.0/20    |
+|  subnet-634cd904          |  us-west-2a |  172.31.100.0/23  |
+|  subnet-032dff8958139e77a |  us-west-2b |  10.0.2.128/25    |
+|  subnet-953f69fe          |  us-west-2a |  10.2.4.128/25    |
++---------------------------+-------------+-------------------+
+
+$ aws cloudformation deploy --template-file stack.yml --stack-name eks-cluster \
+--parameter-overrides VpcId=vpc-cc481da7 Subnets=subnet-644cd903,subnet-c3481da8,subnet-0d3f6966 \
+--capabilities CAPABILITY_NAMED_IAM
+
+Waiting for changeset to be created..
+Waiting for stack create/update to complete
+
+Failed to create/update the stack. Run the following command
+to fetch the list of events leading up to the failure
+aws cloudformation describe-stack-events --stack-name eks-cluster
+
+$ aws cloudformation describe-stack-events --stack-name eks-cluster
+{
+    "StackEvents": [
+    ...
+    "ResourceStatus": "CREATE_FAILED",
+            "ResourceStatusReason": "Subnets specified must belong in the same VPC (Service: AmazonEKS; Status Code: 400; Error Code: InvalidParameterException; Request ID: 15fb24d4-5eb6-11e9-b883-af91321c7f5f)",
+    "ResourceProperties": "{\"RoleArn\":\"arn:aws:iam::422152100797:role/eks-service-role\",\"ResourcesVpcConfig\":{\"SubnetIds\":[\"subnet-644cd903\",\"subnet-c3481da8\",\"subnet-0d3f6966\"],\"SecurityGroupIds\":[\"sg-017c7a575d6140a4b\"]},\"Name\":\"eks-cluster\"}"
+    ...
+}
+
+$ aws ec2 describe-subnets --query 'Subnets[].[SubnetId,AvailabilityZone,CidrBlock,VpcId]' --output table | grep vpc-cc481da7
+|  subnet-644cd903          |  us-west-2a |  172.31.104.0/23 |  vpc-cc481da7           |
+|  subnet-c3481da8          |  us-west-2b |  172.31.16.0/20  |  vpc-cc481da7           |
+|  subnet-ab6dc2e2          |  us-west-2b |  172.31.102.0/23 |  vpc-cc481da7           |
+|  subnet-c2481da9          |  us-west-2a |  172.31.32.0/20  |  vpc-cc481da7           |
+|  subnet-aa6dc2e3          |  us-west-2b |  172.31.106.0/23 |  vpc-cc481da7           |
+|  subnet-0d446157          |  us-west-2c |  172.31.200.0/24 |  vpc-cc481da7           |
+|  subnet-c1481daa          |  us-west-2c |  172.31.0.0/20   |  vpc-cc481da7           |
+|  subnet-634cd904          |  us-west-2a |  172.31.100.0/23 |  vpc-cc481da7           |
+
+* So subnet-0d3f6966 is not in vpc-cc481da7. Choose subnet-0d446157 instead.
+
+$ aws cloudformation deploy --template-file stack.yml --stack-name eks-cluster --parameter-overrides VpcId=vpc-cc481da7 Subnets=subnet-644cd903,subnet-c3481da8,subnet-0d446157 --capabilities CAPABILITY_NAMED_IAM
+
+An error occurred (ValidationError) when calling the CreateChangeSet operation: Stack:arn:aws:cloudformation:us-west-2:422152100797:stack/eks-cluster/00d0bf10-5eb6-11e9-933f-0685e3189192 is in ROLLBACK_COMPLETE state and can not be updated.
+
+$ aws cloudformation delete-stack --stack-name eks-cluster 
+
+$ aws cloudformation deploy --template-file stack.yml --stack-name eks-cluster --parameter-overrides VpcId=vpc-cc481da7 Subnets=subnet-644cd903,subnet-c3481da8,subnet-0d446157 --capabilities CAPABILITY_NAMED_IAM
+
+Waiting for changeset to be created..
+Waiting for stack create/update to complete
+Successfully created/updated stack - eks-cluster
+
+$ aws eks describe-cluster --name eks-cluster --query cluster.status
+"ACTIVE"
+
+LYang-MBPro:eks lyang$ aws eks describe-cluster --name eks-cluster --query cluster.endpoint
+"https://DA7A4A4AEE45967F91F8CA29CC4877D2.sk1.us-west-2.eks.amazonaws.com"
+
+$ aws eks describe-cluster --name eks-cluster --query cluster.certificateAuthority.data
+"LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUN5RENDQWJDZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRFNU1EUXhOREV6TXpJeE9Gb1hEVEk1TURReE1URXpNekl4T0Zvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBSm4rCmVTRjAxNS8xM2JQbHRoYUs3VFZBTjFadVFPZmlRcVFHSmoxRFFZTmt4VlY3QmMvUXlhQWNxWUdsQlk4eHZROFMKU2pjZXlMc0ZxYkNSRHJYTDg4UEhWUXhrVmlQM2FQdEU5bGsxRzRMeTY2eXl4N1lnTVNtV2hFSGpsY1luWDd6Nworem1UZ0VYa2ZGY1lPK24vdXBTVU0yOFFJN2tFMHVqQ01vb0ZDMllMWE1TVDVodzFVVXJUSTZUUDFBS0RCanh1CkI2dVBTWlRLN3BxdGtlNURTcmxWNE9vSG5Hc3RDajVnSE93SXVSb3dabUEraDR2K1gzT0Z3N0QzY0xoYUtBZGgKUjV0NklGR3FpaVdtOXA4ajJZUVlrMENpdW5NUU5SVEl0RFNRUktKUU92dlc2akhKaSs4ZFRUdXF2NE9yemdnVQpNZUpWdDM3Ukd5dTlyVks4VmRNQ0F3RUFBYU1qTUNFd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFGTEVJRlhZRnVINHUrTW1ZS3RGUFBFaUhQSFEKQXd0amcvUHB4b25pb2ROSFRaaERUV1BDRmZ2bzZHOGwva3BqUUpXbzVWWFVudlQwL1EwQUNiNGdmVm5SKzNKYQpCcEp3WVlrbkhlY2JuQU1DT2I2QUJjVHh5NlRhTnlTQzZGQmtMWllZZkprSklMeUhDSDIvMUkvOU9XS0NkWWUyClA1M2NyN2pBck0rcFd3cnZEL3NxdDZWdTlQSk40WHhEWTlOTGdnaU8ya2xKK1czVGJXRDRBd2ZyWU1ZQjlDWnUKd0lBbGd3WnNFbVg0a3BOUmVBZG5BeWZZcWNkalpkeXd0VUlKbjlOSDdneEVicGlyRWNLSnVDQkluUjQ3bDBQUwpOZHBTTFYyeFNnSEJzZVRyZ3hLcFZVRHVVOWgxVVh2aC9rY3p0ZlZUUlE0VlVGUXdEeTZvVnVsWEttWT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo="
+
+* added k8s info for eks-cluster in ~/.kube/config -> config-combo
+
+$ kubectl config get-contexts
+CURRENT   NAME                  CLUSTER                      AUTHINFO             NAMESPACE
+*         cluster.flagship.sh   cluster.flagship.sh          admin
+          docker-for-desktop    docker-for-desktop-cluster   docker-for-desktop
+          eks                   eks-cluster                  aws
+
+$ ubectl config use-context eks
+Switched to context "eks".
+
+$ kubectl get all
+NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+service/kubernetes   ClusterIP   10.100.0.1   <none>        443/TCP   32m
+
+* https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html
+  US West (Oregon) (us-west-2):   ami-0923e4b35a30a5f53
+
+* https://docs.aws.amazon.com/eks/latest/userguide/launch-workers.html
+  https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2019-02-11/amazon-eks-nodegroup.yaml
+
+* Have to switch to admin role to create eks-cluster-workers stack for worker nodes. Completed, in output:
+  NodeInstanceRole	arn:aws:iam::422152100797:role/eks-cluster-workers-NodeInstanceRole-MVQ58E67222S
+
+
+$ kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep eks-admin | awk '{print $1}')
+Name:         eks-admin-token-8rxhr
+Namespace:    kube-system
+Labels:       <none>
+Annotations:  kubernetes.io/service-account.name=eks-admin
+              kubernetes.io/service-account.uid=032c1531-5ef6-11e9-acaa-02e8e7aef1b6
+
+Type:  kubernetes.io/service-account-token
+
+Data
+====
+ca.crt:     1025 bytes
+namespace:  11 bytes
+token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJla3MtYWRtaW4tdG9rZW4tOHJ4aHIiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoiZWtzLWFkbWluIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQudWlkIjoiMDMyYzE1MzEtNWVmNi0xMWU5LWFjYWEtMDJlOGU3YWVmMWI2Iiwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50Omt1YmUtc3lzdGVtOmVrcy1hZG1pbiJ9.N3GMoYLDdS5y2miRkKJkqPlducG7eBkzRnniaZXkMXXaNdd3pblp6kxQNS-wC_wcx9GGoNvp04OwtlLHdj5maSscmzwOCiLVWh1Jbp7evHvsc6pkaNXlr7tAexxI4grpyKnFEh6qJKB91WpCtGquJVofLoazD6v0F9aLMDahE_4fo9AbU1mmHAAoaljTOHH6_VEjN5qQoACaFJAgKMHWUmDybhQP2OhddrNmx9luCZJAm8vrh4a-q1jybE-qLI0z9Nru7iYxy-TdpVEyDy4uqUj3P-pPLPFWj4P63NtrbbkJ0_uumtIKva4Co3mLNTHK8Gu3lTNoY657xSGUDSeiLA
+
+* Since I have already using port 8001 (see todobackend/k8s/app/deployment.yaml) for the todo app on local k8s, so I use port 8002 for the proxy for k8s dashboard
+$ kubectl proxy --port 8002
+Starting to serve on 127.0.0.1:8002
+
+* see screenshot 'k8s-dashboard'
+
+* There is already a 'gp2' storage class in charterscratch
+$ $ kubectl get sc
+  1 kind: StorageClass
+NAME            PROVISIONER             AGE
+gp2 (default)   kubernetes.io/aws-ebs   7h
+
+* So I named my sc as 'ly-dckr-on-aws-gp2' in gp2-storage-class.yaml
+$ kubectl apply -f gp2-storage-class.yaml
+storageclass.storage.k8s.io "ly-dckr-on-aws-gp2" created
+
+$ kubectl describe sc/ly-dckr-on-aws-gp2
+Name:            ly-dckr-on-aws-gp2
+IsDefaultClass:  No
+Annotations:     kubectl.kubernetes.io/last-applied-configuration={"apiVersion":"storage.k8s.io/v1","kind":"StorageClass","metadata":{"annotations":{},"name":"ly-dckr-on-aws-gp2","namespace":""},"mountOptions":["debug"],"parameters":{"type":"gp2"},"provisioner":"kubernetes.io/aws-ebs","reclaimPolicy":"Delete"}
+
+Provisioner:           kubernetes.io/aws-ebs
+Parameters:            type=gp2
+AllowVolumeExpansion:  <unset>
+MountOptions:
+  debug
+ReclaimPolicy:      Delete
+VolumeBindingMode:  Immediate
+Events:             <none>
+
+$ kubectl patch storageclass ly-dckr-on-aws-gp2 \
+> -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+storageclass.storage.k8s.io "ly-dckr-on-aws-gp2" patched
+
+kubectl describe sc/ly-dckr-on-aws-gp2
+Name:            ly-dckr-on-aws-gp2
+IsDefaultClass:  Yes  <==== updated
+...
+
+$ kubectl apply -f k8s/db
+service "todobackend-db" created
+deployment.apps "todobackend-db" created
+Error from server (Forbidden): error when creating "k8s/db/storage.yaml": persistentvolumeclaims "todobackend-data" is forbidden: Internal error occurred: 2 default StorageClasses were found
+
+* reset ly-dckr-on-aws-gp2 as "not default":
+$ kubectl patch storageclass ly-dckr-on-aws-gp2 \
+> -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+storageclass.storage.k8s.io "ly-dckr-on-aws-gp2" patched
+
+* rerun 'kubectl apply -f k8s/db', that worked, but on k8s dashboard, todobackend-db failed with error:
+    kubernetes 1 node(s) had volume node affinity conflict.
+
+  The problem is that the eks-cluster-workers are deployed to three zones: us-west-2a, -2b, and -2c. 
+   
+* deleted eks-cluster-workers, and re-created eks-cluster-workers stack using aws cloudformation console
+  https://docs.aws.amazon.com/eks/latest/userguide/launch-workers.html
+  Parameters:
+  https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2019-02-11/amazon-eks-nodegroup.yaml
+  ami-0923e4b35a30a5f53
+
+  subnets: subnet-644cd903,subnet-c2481da9,subnet-634cd904
+
+  Record in the Outputs tab:
+  NodeInstanceRole:	arn:aws:iam::422152100797:role/eks-cluster-workers-NodeInstanceRole-170YAK5OB2NJ8 
+  
+* update aws-auth-cm.yaml
+
+* load balancer error:
+Error creating load balancer (will retry): failed to ensure load balancer for service default/todobackend: TooManyLoadBalancers: Exceeded quota of account 422152100797 status code: 400, request id: 85dcc3b0-5ff3-11e9-8606-f5b135e309f6
+
+$ aws elb describe-load-balancers --query 'LoadBalancerDescriptions[].[LoadBalancerName,CreatedTime]' --output table
+------------------------------------------------------------------
+|                      DescribeLoadBalancers                     |
++-----------------------------------+----------------------------+
+|  bezruload                        |  2018-06-28T22:02:09.030Z  |
+|  CATELBTEST                       |  2018-06-28T22:06:41.860Z  |
+|  shamim-elb                       |  2018-06-28T22:06:56.640Z  |
+|  webpage                          |  2018-07-19T13:14:45.360Z  |
+|  aws-clean-up-ELB                 |  2019-01-08T00:18:03.570Z  |
+|  afdb5ec3c566611e982a602ebf7012b0 |  2019-04-03T23:22:12.960Z  |
+|  a932645fd570b11e9ac8b028686fefa5 |  2019-04-04T18:59:17Z      |
+|  a96340cdb570f11e9a3940230a145ae1 |  2019-04-04T19:29:23.500Z  |
+|  a32643f86571d11e9925402902f137ee |  2019-04-04T21:05:59.920Z  |
+|  a3f8dc16f572311e981af02ee24e9a7d |  2019-04-04T21:49:49.470Z  |
+|  a28dfc0ad572811e9a72a0203ba60d1b |  2019-04-04T22:24:51.480Z  |
+|  a16befd49572d11e9a552021fb14b89c |  2019-04-04T23:00:29.960Z  |
+|  a4bd12d7657c211e9970f022e40c4733 |  2019-04-05T16:47:57.810Z  |
+|  a6b1e3ee557e211e98acd029f6dad83a |  2019-04-05T20:38:15.220Z  |
+|  a26f5509a5a1f11e9a08c02805e84be4 |  2019-04-08T16:58:25.740Z  |
+|  af43c843d5a2711e9a88e0244bee5465 |  2019-04-08T18:01:21.640Z  |
+|  a4caf4e155a3511e9b839020d477549e |  2019-04-08T19:36:28.990Z  |
+|  ad9c75dd85a4011e9aa7202eabb9a899 |  2019-04-08T20:58:53.280Z  |
+|  a696f4f9b5a4911e9bba302847311190 |  2019-04-08T22:00:31.310Z  |
+|  a5dd39ee15a4f11e984cc023e2402272 |  2019-04-08T22:42:59.090Z  |
++-----------------------------------+----------------------------+
+$ aws elb delete-load-balancer --load-balancer-name webpage
+$ aws elb delete-load-balancer --load-balancer-name bezruload
+$ aws elb delete-load-balancer --load-balancer-name CATELBTEST
+
+* still have no quota to create LB.
+
+* decided to tear down eks:
+
+* use kubectl port-forward to a pod:
+$ kubectl get pods
+NAME                              READY     STATUS      RESTARTS   AGE
+todobackend-5d464f556b-6d54p      1/1       Running     0          17h
+todobackend-5d464f556b-mfv4z      1/1       Running     0          17h
+todobackend-db-77897f594f-n4dk6   1/1       Running     0          1d
+todobackend-migrate-jx79t         0/1       Completed   0          23h
+
+$ kubectl port-forward todobackend-5d464f556b-mfv4z 9000:8000    (local 9000 -> pod 8000)
+LYang-MBPro:~ lyang$ kubectl port-forward todobackend-5d464f556b-mfv4z 9000:8000
+Forwarding from 127.0.0.1:9000 -> 8000
+
+* screeshot web browser on "http://localhost:9000/todos"
+
+* The load balancer problem is due to that
+    The LB is configured to Availability Zones: us-west-2b and us-west-2c when created, but the pods are all in us-west-2a.
+
+  Solution:
+    Using the AWS console, EC2->Load Balancers,  to add the subnet-c2481da9 in us-west-2a to the LB, and removed 
+    us-west-2b and us-west-2c from LB.
+
+  Now k8s load balancer service's external IP is functional, see screenshots:
+   1. 'access-app-via-load-balancer'.
+   2. 'k8s-service-load-balancer-ext-ip'
+   3. 'k8s-service-event-ensured-load-balancer'
+
+****  Work is complete. Done with the book 'Docker on Amazon Web Services' (on 4/16/2019, bought on 12/9/2018).  **** 
